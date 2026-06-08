@@ -97,7 +97,6 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
   firebase.initializeApp({
@@ -108,8 +107,7 @@
     messagingSenderId: "561359988054",
     appId: "1:561359988054:web:5a4c17f2ced6150ccae2f7"
   });
-  var db   = firebase.firestore();
-  var auth = firebase.auth();
+  var db = firebase.firestore();
 
   // ── utils ──────────────────────────────────────────────────────────────────
   function toast(msg, dur) {
@@ -118,22 +116,9 @@
     clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, dur||2200);
   }
 
-  // ── auth anônima + listener ────────────────────────────────────────────────
-  auth.signInAnonymously().catch(function() {
-    // fallback: tenta direto sem auth
-    iniciarListener();
-  });
-  auth.onAuthStateChanged(function(user) {
-    if (user) iniciarListener();
-  });
-
-  var _listenerAtivo = false;
-  function iniciarListener() {
-    if (_listenerAtivo) return;
-    _listenerAtivo = true;
-    db.collection('pedidos')
+  // ── listener em tempo real ─────────────────────────────────────────────────
+  db.collection('pedidos')
     .where('status','==','saiu')
-    .orderBy('createdAt','desc')
     .onSnapshot(function(snap) {
       document.getElementById('dot-live').classList.add('on');
       document.getElementById('lbl-live').textContent = snap.size + ' em rota';
@@ -206,8 +191,8 @@
       document.getElementById('dot-live').classList.remove('on');
       document.getElementById('lbl-live').textContent = 'Erro de conexão';
       document.getElementById('lista').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Sem conexão</div><div class="empty-sub">Verifique sua internet e recarregue a página.</div></div>';
+      console.error('Firestore erro:', err);
     });
-  } // fim iniciarListener
 
   // ── confirmar entrega ──────────────────────────────────────────────────────
   function confirmar(docId, codigoCorreto, nomeEnc, numEnc, phone) {
