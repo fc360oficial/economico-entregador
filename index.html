@@ -116,15 +116,21 @@
     clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, dur||2200);
   }
 
-  // ── listener em tempo real ─────────────────────────────────────────────────
+  // ── listener em tempo real — só entregas em domicílio ─────────────────────
   db.collection('pedidos')
     .where('status','==','saiu')
     .onSnapshot(function(snap) {
+      // filtra apenas pedidos de entrega (não retirada em loja)
+      var docs = snap.docs.filter(function(doc) {
+        var m = doc.data().modo;
+        return !m || m === 'entrega';
+      });
+
       document.getElementById('dot-live').classList.add('on');
-      document.getElementById('lbl-live').textContent = snap.size + ' em rota';
+      document.getElementById('lbl-live').textContent = docs.length + ' em rota';
 
       var lista = document.getElementById('lista');
-      if (snap.empty) {
+      if (!docs.length) {
         lista.innerHTML = '<div class="empty">'
           + '<div class="empty-icon">🛵</div>'
           + '<div class="empty-title">Nenhuma entrega no momento</div>'
@@ -133,7 +139,7 @@
         return;
       }
 
-      lista.innerHTML = snap.docs.map(function(doc) {
+      lista.innerHTML = docs.map(function(doc) {
         var d = doc.data();
         var phone = (d.phone||'').replace(/\D/g,'');
 
