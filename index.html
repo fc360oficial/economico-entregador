@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>Entregador — Econômico</title>
+  <meta name="theme-color" content="#0d0d0d"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{background:#0d0d0d;color:#fff;font-family:'Inter',system-ui,sans-serif;min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+    :root{--y:#FFC600;--dark:#0d0d0d;--card:#161616;--border:#2a2a2a;--text2:#888;--green:#2d9e62;--red:#e74c3c}
+
+    /* HEADER */
+    .header{background:#111;border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+    .header-logo{font-size:17px;font-weight:800;color:var(--y)}
+    .header-sub{font-size:11px;color:var(--text2);margin-top:1px}
+    .badge-live{display:flex;align-items:center;gap:6px;background:#1a1a1a;border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--text2)}
+    .badge-live .dot{width:7px;height:7px;border-radius:50%;background:#555;transition:background .3s}
+    .badge-live .dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
+
+    /* CONTEÚDO */
+    .content{padding:16px}
+    .empty{text-align:center;padding:80px 24px}
+    .empty-icon{font-size:56px;margin-bottom:16px}
+    .empty-title{font-size:18px;font-weight:800;color:#fff;margin-bottom:8px}
+    .empty-sub{font-size:13px;color:var(--text2);line-height:1.5}
+
+    /* CARD */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:14px;overflow:hidden}
+    .card-header{padding:14px 16px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .card-num{font-size:13px;font-weight:800;color:var(--y)}
+    .card-nome{font-size:16px;font-weight:700;color:#fff;margin-top:2px}
+    .badge-saiu{background:#1a2e1a;color:var(--green);border:1px solid var(--green);border-radius:20px;font-size:10px;font-weight:700;padding:3px 10px;white-space:nowrap;flex-shrink:0}
+
+    .card-info{padding:0 16px 12px;display:flex;flex-direction:column;gap:7px}
+    .info-row{display:flex;align-items:flex-start;gap:8px;font-size:13px}
+    .info-icon{font-size:15px;flex-shrink:0;margin-top:1px}
+    .info-val{color:#ddd;line-height:1.4}
+    .info-val strong{color:#fff}
+
+    /* PAGAMENTO */
+    .pag-pix-pago{color:var(--green);font-weight:700}
+    .pag-pix-pend{color:#d68910;font-weight:700}
+    .pag-cartao{color:#aaa;font-weight:600}
+
+    /* CÓDIGO */
+    .cod-section{border-top:1px solid var(--border);padding:14px 16px 16px}
+    .cod-label{font-size:11px;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+    .cod-row{display:flex;gap:8px;align-items:center}
+    .cod-input{flex:1;background:#111;border:2px solid var(--border);border-radius:10px;color:#fff;font-size:26px;font-weight:800;font-family:monospace;letter-spacing:8px;text-align:center;padding:10px 8px;outline:none;transition:border-color .2s;-webkit-appearance:none}
+    .cod-input:focus{border-color:var(--y)}
+    .cod-input.erro{border-color:var(--red);animation:shake .3s}
+    .cod-input.ok{border-color:var(--green)}
+    .btn-confirmar{background:var(--y);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:800;padding:12px 18px;cursor:pointer;white-space:nowrap;font-family:inherit;transition:opacity .2s;flex-shrink:0}
+    .btn-confirmar:active{opacity:.8}
+    .btn-confirmar:disabled{opacity:.4;cursor:not-allowed}
+
+    /* ENTREGUE */
+    .card.entregue-ok{border-color:var(--green);opacity:.6}
+    .entregue-banner{background:#0a1f0a;border-top:1px solid var(--green);padding:12px 16px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--green)}
+
+    /* TOAST */
+    .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;pointer-events:none;opacity:0;transition:all .25s;z-index:999;white-space:nowrap;border:1px solid #333}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    /* LOADING */
+    .loading{text-align:center;padding:60px 20px;color:var(--text2);font-size:14px}
+    .spinner{width:28px;height:28px;border:3px solid #333;border-top-color:var(--y);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px}
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+    /* CONTA REGRESSIVA */
+    .contador{font-size:11px;color:var(--text2);text-align:center;padding:4px 0 12px}
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-logo">🛵 Econômico Entregas</div>
+    <div class="header-sub">Painel do Entregador</div>
+  </div>
+  <div class="badge-live">
+    <div class="dot" id="dot-live"></div>
+    <span id="lbl-live">Conectando…</span>
+  </div>
+</div>
+
+<div class="content" id="lista">
+  <div class="loading"><div class="spinner"></div>Buscando pedidos…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script>
+  firebase.initializeApp({
+    apiKey: "AIzaSyCfUZxP0gNPVOAdUsGuoRNSQlfbEsNMUCA",
+    authDomain: "economico-delivery.firebaseapp.com",
+    projectId: "economico-delivery",
+    storageBucket: "economico-delivery.appspot.com",
+    messagingSenderId: "561359988054",
+    appId: "1:561359988054:web:5a4c17f2ced6150ccae2f7"
+  });
+  var db = firebase.firestore();
+
+  // ── utils ──────────────────────────────────────────────────────────────────
+  function toast(msg, dur) {
+    var t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(t._t); t._t = setTimeout(function(){ t.classList.remove('show'); }, dur||2200);
+  }
+
+  // ── listener em tempo real ─────────────────────────────────────────────────
+  db.collection('pedidos')
+    .where('status','==','saiu')
+    .orderBy('createdAt','desc')
+    .onSnapshot(function(snap) {
+      document.getElementById('dot-live').classList.add('on');
+      document.getElementById('lbl-live').textContent = snap.size + ' em rota';
+
+      var lista = document.getElementById('lista');
+      if (snap.empty) {
+        lista.innerHTML = '<div class="empty">'
+          + '<div class="empty-icon">🛵</div>'
+          + '<div class="empty-title">Nenhuma entrega no momento</div>'
+          + '<div class="empty-sub">Quando um pedido sair para entrega ele aparecerá aqui automaticamente.</div>'
+          + '</div>';
+        return;
+      }
+
+      lista.innerHTML = snap.docs.map(function(doc) {
+        var d = doc.data();
+        var phone = (d.phone||'').replace(/\D/g,'');
+
+        // endereço
+        var endParts = [d.endLogradouro||d.endereco, d.endNumero, d.endComplemento, d.endBairro, d.endCidade].filter(Boolean);
+        var endStr   = endParts.length ? endParts.join(', ') : (d.enderecoCompleto || '—');
+        var modoEntrega = !d.modo || d.modo === 'entrega';
+
+        // pagamento
+        var pagHtml;
+        if (d.pagamento === 'pix') {
+          pagHtml = d.pagamentoPago
+            ? '<span class="pag-pix-pago">PIX ✓ pago</span>'
+            : '<span class="pag-pix-pend">PIX — aguardando confirmação</span>';
+        } else {
+          pagHtml = '<span class="pag-cartao">Cartão na entrega</span>';
+        }
+
+        var total = Number(d.total||0).toFixed(2).replace('.',',');
+
+        return '<div class="card" id="card-'+doc.id+'">'
+          + '<div class="card-header">'
+          +   '<div>'
+          +     '<div class="card-num">Pedido '+d.num+'</div>'
+          +     '<div class="card-nome">'+(d.nome||'Cliente')+'</div>'
+          +   '</div>'
+          +   '<span class="badge-saiu">🛵 Em rota</span>'
+          + '</div>'
+          + '<div class="card-info">'
+          +   (modoEntrega
+              ? '<div class="info-row"><span class="info-icon">📍</span><span class="info-val">'+endStr+'</span></div>'
+              : '<div class="info-row"><span class="info-icon">🏪</span><span class="info-val"><strong>Retirar na loja</strong></span></div>')
+          +   '<div class="info-row"><span class="info-icon">💳</span><span class="info-val">'+pagHtml+' &nbsp;·&nbsp; <strong>R$ '+total+'</strong></span></div>'
+          +   (phone ? '<div class="info-row"><span class="info-icon">📱</span><span class="info-val"><a href="https://wa.me/55'+phone+'" style="color:var(--y);text-decoration:none">'+d.phone+'</a></span></div>' : '')
+          + '</div>'
+          + (d.codigoEntrega
+            ? '<div class="cod-section">'
+            +   '<div class="cod-label">🔐 Código de confirmação — peça ao cliente</div>'
+            +   '<div class="cod-row">'
+            +     '<input type="tel" id="inp-'+doc.id+'" class="cod-input" maxlength="4" placeholder="· · · ·" inputmode="numeric"'
+            +       ' oninput="this.value=this.value.replace(/\\D/g,\'\')">'
+            +     '<button class="btn-confirmar" id="btn-'+doc.id+'"'
+            +       ' onclick="confirmar(\''+doc.id+'\',\''+d.codigoEntrega+'\',\''+encodeURIComponent(d.nome||'')+'\',\''+encodeURIComponent(d.num||'')+'\',\''+phone+'\')">'
+            +       '✓ Confirmar'
+            +     '</button>'
+            +   '</div>'
+            + '</div>'
+            : '<div class="cod-section" style="padding:10px 16px 14px">'
+            +   '<div style="font-size:12px;color:var(--text2)">Aguardando código de confirmação…</div>'
+            + '</div>')
+          + '</div>';
+      }).join('');
+
+    }, function(err) {
+      document.getElementById('dot-live').classList.remove('on');
+      document.getElementById('lbl-live').textContent = 'Erro de conexão';
+      document.getElementById('lista').innerHTML = '<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-title">Sem conexão</div><div class="empty-sub">Verifique sua internet e recarregue a página.</div></div>';
+    });
+
+  // ── confirmar entrega ──────────────────────────────────────────────────────
+  function confirmar(docId, codigoCorreto, nomeEnc, numEnc, phone) {
+    var input = document.getElementById('inp-'+docId);
+    var btn   = document.getElementById('btn-'+docId);
+    var cod   = input ? input.value.trim() : '';
+
+    if (cod.length !== 4) {
+      toast('Digite os 4 dígitos do cliente');
+      input && input.focus();
+      return;
+    }
+    if (cod !== codigoCorreto) {
+      toast('❌ Código incorreto! Peça novamente ao cliente.');
+      if (input) {
+        input.classList.add('erro');
+        input.value = '';
+        setTimeout(function(){ input.classList.remove('erro'); }, 800);
+        input.focus();
+      }
+      return;
+    }
+
+    // código correto
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    input.classList.add('ok');
+
+    db.collection('pedidos').doc(docId).update({ status: 'entregue' })
+      .then(function() {
+        toast('✅ Entrega confirmada!', 3000);
+        var card = document.getElementById('card-'+docId);
+        if (card) {
+          var sec = card.querySelector('.cod-section');
+          if (sec) sec.innerHTML = '<div class="entregue-banner">✅ Entrega confirmada com sucesso!</div>';
+          card.classList.add('entregue-ok');
+        }
+        // WhatsApp cliente
+        if (phone) {
+          var msg = '✅ Olá ' + decodeURIComponent(nomeEnc) + '! Seu pedido '
+            + decodeURIComponent(numEnc) + ' foi entregue. Obrigado pela preferência! 😊';
+          window.open('https://wa.me/55'+phone+'?text='+encodeURIComponent(msg), '_blank');
+        }
+      })
+      .catch(function(e) {
+        btn.disabled = false;
+        btn.textContent = '✓ Confirmar';
+        input.classList.remove('ok');
+        toast('Erro: ' + e.message);
+      });
+  }
+</script>
+</body>
+</html>
