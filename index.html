@@ -109,6 +109,45 @@
   });
   var db = firebase.firestore();
 
+  // ── som + notificação ──────────────────────────────────────────────────────
+  var _audioCtx = null;
+  var _conhecidos = null; // null = primeira carga, não toca
+
+  function _initAudio() {
+    if (!_audioCtx) {
+      try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+  }
+
+  function playApito(num) {
+    _initAudio();
+    if (_audioCtx) {
+      var notas = [523, 659, 784, 1047, 784];
+      notas.forEach(function(freq, i) {
+        var o = _audioCtx.createOscillator();
+        var g = _audioCtx.createGain();
+        o.connect(g); g.connect(_audioCtx.destination);
+        o.type = 'triangle'; o.frequency.value = freq;
+        var t = _audioCtx.currentTime + i * 0.18;
+        g.gain.setValueAtTime(0.4, t);
+        g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        o.start(t); o.stop(t + 0.32);
+      });
+    }
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('🛵 Nova entrega!', { body: 'Pedido ' + num + ' saiu para entrega.', icon: 'https://fc360oficial.github.io/economicodelivery/logo.png' });
+    }
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  }
+
+  // pede permissão de notificação ao primeiro toque
+  document.addEventListener('click', function() {
+    _initAudio();
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, { once: true });
+
   // ── utils ──────────────────────────────────────────────────────────────────
   function toast(msg, dur) {
     var t = document.getElementById('toast');
@@ -125,6 +164,17 @@
         var m = doc.data().modo;
         return !m || m === 'entrega';
       });
+
+      // detecta novos pedidos e toca apito
+      var idsAtuais = docs.map(function(d){ return d.id; });
+      if (_conhecidos !== null) {
+        var novos = docs.filter(function(d){ return _conhecidos.indexOf(d.id) === -1; });
+        if (novos.length) {
+          playApito(novos[0].data().num || '');
+          toast('🛵 Nova entrega chegou!', 3500);
+        }
+      }
+      _conhecidos = idsAtuais;
 
       document.getElementById('dot-live').classList.add('on');
       document.getElementById('lbl-live').textContent = docs.length + ' em rota';
