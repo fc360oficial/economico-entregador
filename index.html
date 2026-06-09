@@ -189,12 +189,15 @@
 
   // ── senha ────────────────────────────────────────────────────────────────────
   var ENTREGADOR_PASS_DEFAULT = 'entregador2024';
-  var _entPass = ENTREGADOR_PASS_DEFAULT;
-  var _logado  = localStorage.getItem('ec_entregador') === '1';
+  var _entPass  = ENTREGADOR_PASS_DEFAULT;
+  var _endLoja  = 'Rua Antonio Luiz Soares, 217, Pernambuco';
+  var _logado   = localStorage.getItem('ec_entregador') === '1';
   var _unsubRota = null, _unsubHist = null, _entreguesHoje = 0;
 
   db.collection('config').doc('loja').get().then(function(doc) {
-    if (doc.exists && doc.data().entregadorPass) _entPass = doc.data().entregadorPass;
+    if (!doc.exists) return;
+    if (doc.data().entregadorPass) _entPass = doc.data().entregadorPass;
+    if (doc.data().enderecoLoja)   _endLoja = doc.data().enderecoLoja;
   });
 
   // ── login / logout ───────────────────────────────────────────────────────────
@@ -277,8 +280,12 @@
     lbl.textContent = txt;
   }
 
-  function mapsUrl(end) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(end); }
-  function wazeUrl(end) { return 'https://waze.com/ul?q=' + encodeURIComponent(end); }
+  function mapsUrl(end) {
+    return 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(_endLoja) + '&destination=' + encodeURIComponent(end) + '&travelmode=driving';
+  }
+  function wazeUrl(end) {
+    return 'https://waze.com/ul?navigate=yes&q=' + encodeURIComponent(end);
+  }
 
   // ── card HTML ────────────────────────────────────────────────────────────────
   function cardHtml(doc, idx, total) {
@@ -406,7 +413,7 @@
               var d = doc.data();
               return [d.endLogradouro || d.endereco, d.endNumero, d.endBairro, d.endCidade || 'Pernambuco'].filter(Boolean).join(', ');
             });
-            var mapsRota = 'https://www.google.com/maps/dir/' + enderecos.map(encodeURIComponent).join('/');
+            var mapsRota = 'https://www.google.com/maps/dir/' + [_endLoja].concat(enderecos).map(encodeURIComponent).join('/');
             rotaBtn = '<a class="rota-btn" href="' + mapsRota + '" target="_blank">🗺️ Ver rota completa · ' + docs.length + ' paradas</a>';
           }
           lista.innerHTML = rotaBtn + docs.map(function(doc, i) { return cardHtml(doc, i, docs.length); }).join('');
