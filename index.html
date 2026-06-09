@@ -57,6 +57,11 @@
     .info-val{color:#ddd;line-height:1.4;flex:1}
     .info-val strong{color:#fff}
 
+    /* ROTA COMPLETA */
+    .rota-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:13px;background:#1a1a1a;border:1px solid var(--y);border-radius:12px;color:var(--y);font-size:13px;font-weight:800;text-decoration:none;margin-bottom:14px;cursor:pointer;transition:background .2s}
+    .rota-btn:active{background:#2a2200}
+    .seq-badge{background:#FFC600;color:#000;border-radius:20px;font-size:10px;font-weight:800;padding:3px 10px;white-space:nowrap;flex-shrink:0}
+
     /* MAPA */
     .map-btns{display:flex;gap:6px;margin-top:6px}
     .btn-map{flex:1;padding:8px 0;border-radius:8px;border:1px solid var(--border);background:#1a1a1a;color:#ddd;font-size:12px;font-weight:700;text-align:center;text-decoration:none;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:border-color .2s,color .2s}
@@ -186,7 +191,7 @@
   var ENTREGADOR_PASS_DEFAULT = 'entregador2024';
   var _entPass = ENTREGADOR_PASS_DEFAULT;
   var _logado  = localStorage.getItem('ec_entregador') === '1';
-  var _unsubRota = null, _unsubHist = null;
+  var _unsubRota = null, _unsubHist = null, _entreguesHoje = 0;
 
   db.collection('config').doc('loja').get().then(function(doc) {
     if (doc.exists && doc.data().entregadorPass) _entPass = doc.data().entregadorPass;
@@ -264,11 +269,19 @@
 
   function fmtVal(v) { return 'R$ ' + Number(v || 0).toFixed(2).replace('.', ','); }
 
+  function _atualizarContador(pendentes) {
+    var lbl = document.getElementById('lbl-live');
+    if (!lbl) return;
+    var txt = pendentes + ' pendente' + (pendentes !== 1 ? 's' : '');
+    if (_entreguesHoje > 0) txt += ' · ' + _entreguesHoje + ' ✅';
+    lbl.textContent = txt;
+  }
+
   function mapsUrl(end) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(end); }
   function wazeUrl(end) { return 'https://waze.com/ul?q=' + encodeURIComponent(end); }
 
   // ── card HTML ────────────────────────────────────────────────────────────────
-  function cardHtml(doc) {
+  function cardHtml(doc, idx, total) {
     var d   = doc.data();
     var ph  = (d.phone || '').replace(/\D/g, '');
     var end = [d.endLogradouro || d.endereco, d.endNumero, d.endComplemento, d.endBairro, d.endCidade]
@@ -312,10 +325,11 @@
         + '</div>'
       : '<div class="cod-section" style="padding:10px 16px 14px"><div style="font-size:12px;color:var(--text2)">Aguardando código…</div></div>';
 
+    var parada = total > 1 ? (idx + 1) + 'ª parada' : 'Em rota';
     return '<div class="card" id="card-' + doc.id + '">'
       + '<div class="card-header">'
       +   '<div><div class="card-num">Pedido ' + d.num + '</div><div class="card-nome">' + (d.nome || 'Cliente') + '</div></div>'
-      +   '<span class="badge-saiu">🛵 Em rota</span>'
+      +   '<span class="seq-badge">🛵 ' + parada + '</span>'
       + '</div>'
       + '<div class="card-info">'
       +   '<div class="info-row"><span class="info-icon">📍</span><span class="info-val">' + end + '</span></div>'
@@ -333,6 +347,7 @@
     var wrap    = document.getElementById('hist-wrap');
     var lista   = document.getElementById('hist-lista');
     var totalEl = document.getElementById('hist-total');
+    _entreguesHoje = docs ? docs.length : 0;
     if (!docs || !docs.length) { wrap.style.display = 'none'; return; }
     wrap.style.display = 'block';
     var soma = docs.reduce(function(acc, doc) { return acc + Number(doc.data().total || 0); }, 0);
@@ -361,6 +376,13 @@
           var m = doc.data().modo; return !m || m === 'entrega';
         });
 
+        // ordena por bairro (agrupa entregas próximas)
+        docs.sort(function(a, b) {
+          var ba = (a.data().endBairro || a.data().endereco || '').toLowerCase();
+          var bb = (b.data().endBairro || b.data().endereco || '').toLowerCase();
+          return ba.localeCompare(bb, 'pt');
+        });
+
         var ids = docs.map(function(d) { return d.id; });
         if (_conhecidos !== null) {
           var novos = docs.filter(function(d) { return _conhecidos.indexOf(d.id) === -1; });
@@ -369,14 +391,26 @@
         _conhecidos = ids;
 
         document.getElementById('dot-live').classList.add('on');
-        document.getElementById('lbl-live').textContent = docs.length + ' em rota';
+        _atualizarContador(docs.length);
 
         var lista = document.getElementById('lista');
-        lista.innerHTML = docs.length
-          ? docs.map(cardHtml).join('')
-          : '<div class="empty"><div class="empty-icon">🛵</div>'
+        if (!docs.length) {
+          lista.innerHTML = '<div class="empty"><div class="empty-icon">🛵</div>'
             + '<div class="empty-title">Nenhuma entrega no momento</div>'
             + '<div class="empty-sub">Quando um pedido sair para entrega ele aparecerá aqui automaticamente.</div></div>';
+        } else {
+          // botão rota completa (2+ paradas)
+          var rotaBtn = '';
+          if (docs.length >= 2) {
+            var enderecos = docs.map(function(doc) {
+              var d = doc.data();
+              return [d.endLogradouro || d.endereco, d.endNumero, d.endBairro, d.endCidade || 'Pernambuco'].filter(Boolean).join(', ');
+            });
+            var mapsRota = 'https://www.google.com/maps/dir/' + enderecos.map(encodeURIComponent).join('/');
+            rotaBtn = '<a class="rota-btn" href="' + mapsRota + '" target="_blank">🗺️ Ver rota completa · ' + docs.length + ' paradas</a>';
+          }
+          lista.innerHTML = rotaBtn + docs.map(function(doc, i) { return cardHtml(doc, i, docs.length); }).join('');
+        }
 
       }, function() {
         document.getElementById('dot-live').classList.remove('on');
