@@ -159,6 +159,14 @@
     <div id="lista">
       <div class="loading"><div class="spinner"></div>Buscando pedidos…</div>
     </div>
+    <div id="nao-atendido-wrap" style="display:none">
+      <div class="hist-section" style="border-top-color:#3a1a1a">
+        <div class="hist-header">
+          <div class="hist-title" style="color:#c0392b">⚠️ Não atendidos hoje</div>
+        </div>
+        <div id="nao-atendido-lista"></div>
+      </div>
+    </div>
     <div id="hist-wrap" style="display:none">
       <div class="hist-section">
         <div class="hist-header">
@@ -192,7 +200,7 @@
   var _entPass  = ENTREGADOR_PASS_DEFAULT;
   var _endLoja  = 'Rua Antonio Luiz Soares, 217, Pernambuco';
   var _logado   = localStorage.getItem('ec_entregador') === '1';
-  var _unsubRota = null, _unsubHist = null, _entreguesHoje = 0;
+  var _unsubRota = null, _unsubHist = null, _unsubNaoAtendido = null, _entreguesHoje = 0;
 
   db.collection('config').doc('loja').get().then(function(doc) {
     if (!doc.exists) return;
@@ -220,6 +228,7 @@
     localStorage.removeItem('ec_entregador');
     if (_unsubRota) { _unsubRota(); _unsubRota = null; }
     if (_unsubHist) { _unsubHist(); _unsubHist = null; }
+    if (_unsubNaoAtendido) { _unsubNaoAtendido(); _unsubNaoAtendido = null; }
     _conhecidos = null;
     document.getElementById('app-screen').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
@@ -349,6 +358,26 @@
       + '</div>';
   }
 
+  // ── não atendidos ────────────────────────────────────────────────────────────
+  function renderNaoAtendidos(docs) {
+    var wrap  = document.getElementById('nao-atendido-wrap');
+    var lista = document.getElementById('nao-atendido-lista');
+    if (!docs || !docs.length) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    lista.innerHTML = docs.map(function(doc) {
+      var d   = doc.data();
+      var end = [d.endLogradouro || d.endereco, d.endBairro].filter(Boolean).join(', ') || '—';
+      return '<div class="hist-card" style="background:#1a0a0a;border-color:#3a1a1a">'
+        + '<div class="hist-left">'
+        +   '<div class="hist-num">Pedido ' + d.num + '</div>'
+        +   '<div class="hist-nome">' + (d.nome || 'Cliente') + '</div>'
+        +   '<div class="hist-end">' + end + '</div>'
+        + '</div>'
+        + '<div class="hist-val"><div style="font-size:13px;font-weight:800;color:#c0392b">⚠️ Não atendeu</div><div style="font-size:10px;color:#888;margin-top:2px">retornou à loja</div></div>'
+        + '</div>';
+    }).join('');
+  }
+
   // ── histórico ────────────────────────────────────────────────────────────────
   function renderHistorico(docs) {
     var wrap    = document.getElementById('hist-wrap');
@@ -428,8 +457,9 @@
       });
 
     // histórico do dia
-    var hoje     = new Date();
+    var hoje      = new Date();
     var inicioDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+
     _unsubHist = db.collection('pedidos')
       .where('status', '==', 'entregue')
       .onSnapshot(function(snap) {
@@ -441,6 +471,19 @@
           return ts >= inicioDia && (!m || m === 'entrega');
         });
         renderHistorico(docs);
+      }, function() {});
+
+    // não atendidos do dia
+    _unsubNaoAtendido = db.collection('pedidos')
+      .where('status', '==', 'nao_atendido')
+      .onSnapshot(function(snap) {
+        var docs = snap.docs.filter(function(doc) {
+          var d = doc.data();
+          if (!d.createdAt) return false;
+          var ts = d.createdAt.toDate ? d.createdAt.toDate() : new Date(d.createdAt.seconds * 1000);
+          return ts >= inicioDia;
+        });
+        renderNaoAtendidos(docs);
       }, function() {});
   }
 
