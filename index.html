@@ -111,6 +111,13 @@
     .hist-valor{font-size:14px;font-weight:800;color:var(--green)}
     .hist-ok{font-size:10px;color:var(--green);margin-top:2px}
 
+    /* FOTO */
+    .btn-foto{width:100%;padding:12px;border-radius:10px;background:#1a1a2e;border:1px dashed #3b82f6;color:#60a5fa;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px}
+    .btn-foto:active{background:#1e2a4a}
+    .foto-thumb{width:100%;border-radius:10px;max-height:220px;object-fit:cover;margin-top:10px;border:2px solid var(--green)}
+    .foto-ok{font-size:11px;color:var(--green);font-weight:700;margin-top:6px;text-align:center}
+    .foto-progress{font-size:12px;color:var(--text2);margin-top:8px;text-align:center}
+
     /* TOAST */
     .toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom));left:50%;transform:translateX(-50%) translateY(20px);background:#222;color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;font-weight:600;pointer-events:none;opacity:0;transition:all .25s;z-index:999;white-space:nowrap;border:1px solid #333}
     .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -184,6 +191,7 @@
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
 <script>
   firebase.initializeApp({
     apiKey: "AIzaSyCfUZxP0gNPVOAdUsGuoRNSQlfbEsNMUCA",
@@ -193,7 +201,8 @@
     messagingSenderId: "561359988054",
     appId: "1:561359988054:web:5a4c17f2ced6150ccae2f7"
   });
-  var db = firebase.firestore();
+  var db      = firebase.firestore();
+  var storage = firebase.storage();
 
   // ── senha ────────────────────────────────────────────────────────────────────
   var ENTREGADOR_PASS_DEFAULT = 'entregador2024';
@@ -513,7 +522,14 @@
         var card = document.getElementById('card-' + docId);
         if (card) {
           var sec = card.querySelector('.cod-section');
-          if (sec) sec.innerHTML = '<div class="entregue-banner">✅ Entrega confirmada com sucesso!</div>';
+          if (sec) sec.innerHTML = '<div class="entregue-banner">✅ Entrega confirmada!</div>'
+            + '<div style="padding:0 16px 16px">'
+            +   '<button class="btn-foto" onclick="triggerFoto(\'' + docId + '\')">'
+            +     '📷 Fotografar sacolas entregues'
+            +   '</button>'
+            +   '<input type="file" id="foto-' + docId + '" accept="image/*" capture="environment" style="display:none" onchange="uploadFoto(\'' + docId + '\',this)">'
+            +   '<div id="foto-status-' + docId + '"></div>'
+            + '</div>';
           card.classList.add('entregue-ok');
         }
         if (phone) {
@@ -525,6 +541,40 @@
       .catch(function(e) {
         btn.disabled = false; btn.textContent = '✓ Confirmar';
         input.classList.remove('ok'); toast('Erro: ' + e.message);
+      });
+  }
+
+  // ── foto de entrega ──────────────────────────────────────────────────────────
+  function triggerFoto(docId) {
+    var el = document.getElementById('foto-' + docId);
+    if (el) el.click();
+  }
+
+  function uploadFoto(docId, input) {
+    var file = input.files[0];
+    if (!file) return;
+    var statusEl = document.getElementById('foto-status-' + docId);
+    if (statusEl) statusEl.innerHTML = '<div class="foto-progress">⏳ Enviando foto…</div>';
+
+    var ref = storage.ref('entregas/' + docId + '/foto_entrega.jpg');
+    ref.put(file, { contentType: file.type })
+      .then(function() { return ref.getDownloadURL(); })
+      .then(function(url) {
+        return db.collection('pedidos').doc(docId).update({ fotoEntregaUrl: url })
+          .then(function() { return url; });
+      })
+      .then(function(url) {
+        if (statusEl) statusEl.innerHTML =
+          '<img src="' + url + '" class="foto-thumb">'
+          + '<div class="foto-ok">✅ Foto registrada com sucesso</div>';
+        // esconde botão de foto
+        var btnFoto = statusEl && statusEl.previousElementSibling && statusEl.previousElementSibling.previousElementSibling;
+        if (btnFoto && btnFoto.classList.contains('btn-foto')) btnFoto.style.display = 'none';
+        toast('📷 Foto salva!', 2500);
+      })
+      .catch(function(e) {
+        if (statusEl) statusEl.innerHTML = '<div style="font-size:12px;color:var(--red);margin-top:8px;text-align:center">Erro ao enviar. Tente novamente.</div>';
+        toast('Erro: ' + e.message);
       });
   }
 
