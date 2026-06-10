@@ -47,7 +47,7 @@
     /* CARD */
     .card{background:var(--card);border:1px solid var(--border);border-radius:16px;margin-bottom:14px;overflow:hidden;transition:border-color .3s,opacity .3s;box-shadow:0 2px 12px rgba(0,0,0,.07)}
     .card-header{padding:14px 16px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
-    .card-num{font-size:13px;font-weight:800;color:var(--y)}
+    .card-num{font-size:13px;font-weight:800;color:#1a1a1a}
     .card-nome{font-size:16px;font-weight:700;color:#1a1a1a;margin-top:2px}
     .badge-saiu{background:rgba(45,158,98,.12);color:var(--green);border:1px solid rgba(45,158,98,.3);border-radius:20px;font-size:10px;font-weight:700;padding:3px 10px;white-space:nowrap;flex-shrink:0}
 
@@ -360,7 +360,7 @@
       +   '<div class="info-row"><span class="info-icon">📍</span><span class="info-val">' + end + '</span></div>'
       +   (mapHtml ? '<div class="info-row"><span class="info-icon" style="opacity:0">·</span><span class="info-val">' + mapHtml + '</span></div>' : '')
       +   '<div class="info-row"><span class="info-icon">💳</span><span class="info-val">' + pagHtml + ' &nbsp;·&nbsp; <strong>' + fmtVal(d.total) + '</strong></span></div>'
-      +   (ph ? '<div class="info-row"><span class="info-icon">📱</span><span class="info-val"><a href="https://wa.me/55' + ph + '" style="color:var(--y);text-decoration:none">' + d.phone + '</a></span></div>' : '')
+      +   (ph ? '<div class="info-row"><span class="info-icon">📱</span><span class="info-val"><a href="https://wa.me/55' + ph + '" style="color:#2563eb;text-decoration:none">' + d.phone + '</a></span></div>' : '')
       + '</div>'
       + itensHtml
       + codHtml
