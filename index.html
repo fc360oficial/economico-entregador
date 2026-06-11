@@ -28,14 +28,14 @@
     #app-screen{display:flex;flex-direction:column;min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
 
     /* HEADER */
-    .header{background:#fff;border-top:5px solid var(--y);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;box-shadow:0 2px 10px rgba(0,0,0,.07)}
-    .header-logo{font-size:17px;font-weight:800;color:#111}
-    .header-sub{font-size:11px;color:var(--text2);margin-top:1px}
+    .header{background:var(--y);border-bottom:1px solid rgba(0,0,0,.1);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10;box-shadow:0 2px 10px rgba(0,0,0,.10)}
+    .header-logo{font-size:17px;font-weight:800;color:#000}
+    .header-sub{font-size:11px;color:rgba(0,0,0,.55);margin-top:1px}
     .header-right{display:flex;align-items:center;gap:8px}
-    .badge-live{display:flex;align-items:center;gap:6px;background:#f5f5f5;border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:var(--text2)}
+    .badge-live{display:flex;align-items:center;gap:6px;background:rgba(0,0,0,.1);border:1px solid rgba(0,0,0,.15);border-radius:20px;padding:5px 12px;font-size:11px;font-weight:600;color:#111}
     .badge-live .dot{width:7px;height:7px;border-radius:50%;background:#555;transition:background .3s}
     .badge-live .dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}
-    .btn-logout{background:none;border:1px solid var(--border);color:var(--text2);padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit}
+    .btn-logout{background:none;border:1px solid rgba(0,0,0,.25);color:#111;padding:5px 10px;border-radius:8px;font-size:11px;cursor:pointer;font-family:inherit}
 
     /* CONTEÚDO */
     .content{padding:16px}
